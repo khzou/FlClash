@@ -28,15 +28,19 @@ GroupsState currentGroupsState(Ref ref) {
       }),
     ),
   );
+  final visibleGroups = groups
+      .where((item) => item.hidden == false)
+      .where((element) => element.name != GroupName.GLOBAL.name)
+      .toList();
+  final globalGroup = groups.where(
+    (item) => item.name == GroupName.GLOBAL.name,
+  );
   return GroupsState(
     value: switch (mode) {
       Mode.direct => [],
       Mode.global => groups.toList(),
       Mode.rule =>
-        groups
-            .where((item) => item.hidden == false)
-            .where((element) => element.name != GroupName.GLOBAL.name)
-            .toList(),
+        visibleGroups.isNotEmpty ? visibleGroups : globalGroup.toList(),
     },
   );
 }
