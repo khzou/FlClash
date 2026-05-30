@@ -46,7 +46,6 @@ extension InitControllerExt on AppController {
         logLevel: LogLevel.warning,
       );
     };
-    // updateTray(); // DISABLED for CPU debugging
     autoUpdateProfiles();
     autoCheckUpdate();
     autoLaunch?.updateStatus(_ref.read(appSettingProvider).autoLaunch);
@@ -61,6 +60,7 @@ extension InitControllerExt on AppController {
     await _connectCore();
     await _initCore();
     await _initStatus();
+    await updateTray();
     _ref.read(initProvider.notifier).value = true;
   }
 
@@ -956,7 +956,7 @@ extension SystemControllerExt on AppController {
   }
 
   Future<void> updateTray() async {
-    tray?.update(
+    await tray?.update(
       trayState: _ref.read(trayStateProvider),
       traffic: _ref.read(
         trafficsProvider.select((state) => state.list.safeLast(Traffic())),

@@ -17,8 +17,12 @@ class Tray {
   static Tray? _instance;
   static const _trayTitleUpdateInterval = Duration(seconds: 3);
 
+  bool _isInitialized = false;
+  String _lastTrayIconPath = '';
+  String _lastToolTip = '';
   String _lastTrayTitle = '';
   DateTime? _lastTrayTitleUpdateAt;
+  String _lastMenuSignature = '';
 
   Tray._internal();
 
@@ -33,6 +37,12 @@ class Tray {
 
   Future<void> destroy() async {
     await trayManager.destroy();
+    _isInitialized = false;
+    _lastTrayIconPath = '';
+    _lastToolTip = '';
+    _lastTrayTitle = '';
+    _lastTrayTitleUpdateAt = null;
+    _lastMenuSignature = '';
   }
 
   String getTryIcon({required bool isStart, required bool tunEnable}) {
@@ -45,35 +55,66 @@ class Tray {
     return 'assets/images/icon/status_3.$trayIconSuffix';
   }
 
-  Future _updateSystemTray({
+  Future<void> _updateSystemTray({
     required bool isStart,
     required bool tunEnable,
   }) async {
-    if (Platform.isLinux) {
-      await trayManager.destroy();
+    final nextIconPath = getTryIcon(isStart: isStart, tunEnable: tunEnable);
+    if (_lastTrayIconPath != nextIconPath) {
+      await trayManager.setIcon(nextIconPath, isTemplate: true);
+      _lastTrayIconPath = nextIconPath;
     }
-    await trayManager.setIcon(
-      getTryIcon(isStart: isStart, tunEnable: tunEnable),
-      isTemplate: true,
-    );
-    if (!Platform.isLinux) {
+    if (!Platform.isLinux && _lastToolTip != appName) {
       await trayManager.setToolTip(appName);
+      _lastToolTip = appName;
     }
+  }
+
+  Future<void> ensureInitialized({
+    required TrayState trayState,
+    required Traffic traffic,
+  }) async {
+    if (_isInitialized) {
+      return;
+    }
+    await updateVisuals(trayState: trayState, traffic: traffic, force: true);
+    await _updateMenu(trayState);
+    _isInitialized = true;
   }
 
   Future<void> updateVisuals({
     required TrayState trayState,
     required Traffic traffic,
+    bool force = false,
   }) async {
-    return; // DISABLED for CPU debugging
+    await _updateSystemTray(
+      isStart: trayState.isStart,
+      tunEnable: trayState.tunEnable,
+    );
+    if (!system.isMacOS) {
+      return;
+    }
+    final title = trayState.isStart && trayState.showTrayTitle
+        ? traffic.trayTitle
+        : '';
+    await _setTrayTitle(title, force: force);
   }
 
   Future<void> update({
     required TrayState trayState,
     required Traffic traffic,
   }) async {
-    await updateVisuals(trayState: trayState, traffic: traffic);
+    await ensureInitialized(trayState: trayState, traffic: traffic);
+    await updateVisuals(trayState: trayState, traffic: traffic, force: true);
+    await _updateMenu(trayState);
+  }
+
+  Future<void> _updateMenu(TrayState trayState) async {
     if (system.isAndroid) {
+      return;
+    }
+    final menuSignature = _buildMenuSignature(trayState);
+    if (_lastMenuSignature == menuSignature) {
       return;
     }
     final stopwatch = Stopwatch()..start();
@@ -119,7 +160,9 @@ class Tray {
     if (system.isMacOS) {
       for (final group in trayState.groups) {
         List<MenuItem> subMenuItems = [];
-        final selectedProxyName = appController.getSelectedProxyName(group.name);
+        final selectedProxyName = appController.getSelectedProxyName(
+          group.name,
+        );
         for (final proxy in group.all) {
           subMenuItems.add(
             MenuItem.checkbox(
@@ -192,15 +235,56 @@ class Tray {
     menuItems.add(exitMenuItem);
     final menu = Menu(items: menuItems);
     await trayManager.setContextMenu(menu);
+    _lastMenuSignature = menuSignature;
     stopwatch.stop();
-    commonPrint.log('[TRAY] menu rebuild took ${stopwatch.elapsedMilliseconds}ms, ${menuItems.length} items');
+    commonPrint.log(
+      '[TRAY] menu rebuild took ${stopwatch.elapsedMilliseconds}ms, ${menuItems.length} items',
+    );
   }
 
   Future<void> updateTrayTitle({
     required bool showTrayTitle,
     required Traffic traffic,
   }) async {
-    return; // DISABLED for CPU debugging
+    if (!system.isMacOS) {
+      return;
+    }
+    final title = showTrayTitle ? traffic.trayTitle : '';
+    await _setTrayTitle(title);
+  }
+
+  Future<void> _setTrayTitle(String title, {bool force = false}) async {
+    final now = DateTime.now();
+    final canUpdate =
+        force ||
+        _lastTrayTitleUpdateAt == null ||
+        now.difference(_lastTrayTitleUpdateAt!) >= _trayTitleUpdateInterval;
+    if (!canUpdate || _lastTrayTitle == title) {
+      return;
+    }
+    await trayManager.setTitle(title);
+    _lastTrayTitle = title;
+    _lastTrayTitleUpdateAt = now;
+  }
+
+  String _buildMenuSignature(TrayState trayState) {
+    final buffer = StringBuffer()
+      ..write(trayState.mode.name)
+      ..write('|${trayState.port}')
+      ..write('|${trayState.autoLaunch}')
+      ..write('|${trayState.systemProxy}')
+      ..write('|${trayState.tunEnable}')
+      ..write('|${trayState.isStart}')
+      ..write('|${trayState.locale}')
+      ..write('|${trayState.showTrayTitle}');
+    for (final group in trayState.groups) {
+      buffer.write('|g:${group.name}');
+      buffer.write(':${trayState.selectedMap[group.name] ?? ''}');
+      for (final proxy in group.all) {
+        buffer.write(':${proxy.name}');
+      }
+    }
+    return buffer.toString();
   }
 
   Future<void> _copyEnv(int port) async {

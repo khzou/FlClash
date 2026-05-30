@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/controller.dart';
 import 'package:fl_clash/models/models.dart';
@@ -17,31 +19,45 @@ class TrayManager extends ConsumerStatefulWidget {
 }
 
 class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
+  Future<void> _syncTray() async {
+    if (tray == null) {
+      return;
+    }
+    await tray!.update(
+      trayState: ref.read(trayStateProvider),
+      traffic: ref.read(
+        trafficsProvider.select((state) => state.list.safeLast(Traffic())),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     trayManager.addListener(this);
-    // TRAY UPDATES DISABLED for CPU debugging
-    // ref.listenManual(trayStateProvider, (prev, next) {
-    //   if (prev != next) {
-    //     tray?.updateVisuals(
-    //       trayState: next,
-    //       traffic: ref.read(
-    //         trafficsProvider.select((state) => state.list.safeLast(Traffic())),
-    //       ),
-    //     );
-    //   }
-    // });
-    // if (system.isMacOS) {
-    //   ref.listenManual(trayTitleStateProvider, (prev, next) {
-    //     if (prev != next) {
-    //       tray?.updateTrayTitle(
-    //         showTrayTitle: next.showTrayTitle,
-    //         traffic: next.traffic,
-    //       );
-    //     }
-    //   });
-    // }
+    unawaited(_syncTray());
+    ref.listenManual(trayStateProvider, (prev, next) {
+      if (prev != next) {
+        unawaited(_syncTray());
+      }
+    });
+    if (system.isMacOS) {
+      ref.listenManual(trayTitleStateProvider, (prev, next) {
+        if (prev != next) {
+          final isRunning = ref.read(
+            runTimeProvider.select((state) => state != null),
+          );
+          if (tray != null) {
+            unawaited(
+              tray!.updateTrayTitle(
+                showTrayTitle: next.showTrayTitle && isRunning,
+                traffic: next.traffic,
+              ),
+            );
+          }
+        }
+      });
+    }
   }
 
   @override
@@ -51,10 +67,11 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
 
   @override
   void onTrayIconRightMouseDown() {
-    // TRAY MENU DISABLED for CPU debugging
-    // await appController.updateTray();
-    // ignore: deprecated_member_use
-    // trayManager.popUpContextMenu(bringAppToFront: true);
+    unawaited(() async {
+      await appController.updateTray();
+      // ignore: deprecated_member_use
+      await trayManager.popUpContextMenu(bringAppToFront: true);
+    }());
   }
 
   @override
