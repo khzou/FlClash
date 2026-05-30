@@ -36,20 +36,48 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
   }
 
   String _buildHoverText(List<TrackerInfo> connections, Traffic traffic) {
-    final activeConnections =
-        connections.where((connection) {
-          final downloadSpeed = connection.downloadSpeed ?? 0;
-          final uploadSpeed = connection.uploadSpeed ?? 0;
-          return downloadSpeed > 0 || uploadSpeed > 0;
-        }).toList()..sort((a, b) {
-          final downloadCompare = (b.downloadSpeed ?? 0).compareTo(
-            a.downloadSpeed ?? 0,
-          );
-          if (downloadCompare != 0) {
-            return downloadCompare;
-          }
-          return (b.uploadSpeed ?? 0).compareTo(a.uploadSpeed ?? 0);
-        });
+    int effectiveDownloadSpeed(TrackerInfo connection) {
+      return connection.downloadSpeed ?? connection.download;
+    }
+
+    int effectiveUploadSpeed(TrackerInfo connection) {
+      return connection.uploadSpeed ?? connection.upload;
+    }
+
+    bool isDirectConnection(TrackerInfo connection) {
+      final directChains = connection.chains.any(
+        (chain) => chain.trim().toUpperCase() == 'DIRECT',
+      );
+      final directRule = connection.rule.trim().toUpperCase() == 'DIRECT';
+      final directPayload =
+          connection.rulePayload.trim().toUpperCase() == 'DIRECT';
+      return directChains || directRule || directPayload;
+    }
+
+    int compareConnections(TrackerInfo a, TrackerInfo b) {
+      final downloadCompare = effectiveDownloadSpeed(
+        b,
+      ).compareTo(effectiveDownloadSpeed(a));
+      if (downloadCompare != 0) {
+        return downloadCompare;
+      }
+      return effectiveUploadSpeed(b).compareTo(effectiveUploadSpeed(a));
+    }
+
+    final activeConnections = connections.where((connection) {
+      final downloadSpeed = effectiveDownloadSpeed(connection);
+      final uploadSpeed = effectiveUploadSpeed(connection);
+      return downloadSpeed > 0 || uploadSpeed > 0;
+    }).toList();
+
+    final nonDirectConnections =
+        activeConnections
+            .where((connection) => !isDirectConnection(connection))
+            .toList()
+          ..sort(compareConnections);
+    final directConnections =
+        activeConnections.where(isDirectConnection).toList()
+          ..sort(compareConnections);
 
     final buffer = StringBuffer()
       ..writeln('Speed')
@@ -64,21 +92,39 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
       return buffer.toString();
     }
 
-    for (final connection in activeConnections) {
-      final site = connection.metadata.host.isNotEmpty
-          ? connection.metadata.host
-          : connection.metadata.destinationIP;
-      final rule = connection.rulePayload.isNotEmpty
-          ? '${connection.rule} (${connection.rulePayload})'
-          : connection.rule;
+    void writeGroup(String title, List<TrackerInfo> items) {
+      if (items.isEmpty) {
+        return;
+      }
       buffer
-        ..writeln(site.isNotEmpty ? site : connection.desc)
-        ..writeln(
-          '  Down: ${(connection.downloadSpeed ?? 0).traffic.show}/s  Up: ${(connection.uploadSpeed ?? 0).traffic.show}/s',
-        )
-        ..writeln('  Rule: $rule')
-        ..writeln();
+        ..writeln(title)
+        ..writeln('----------------------------------------');
+
+      for (final connection in items) {
+        final site = connection.metadata.host.isNotEmpty
+            ? connection.metadata.host
+            : connection.desc;
+        final rule = connection.rulePayload.isNotEmpty
+            ? '${connection.rule} (${connection.rulePayload})'
+            : connection.rule;
+        final tags = connection.chains.join(' > ');
+        buffer
+          ..writeln(site.isNotEmpty ? site : connection.desc)
+          ..writeln(
+            '  Down: ${effectiveDownloadSpeed(connection).traffic.show}/s  Up: ${effectiveUploadSpeed(connection).traffic.show}/s',
+          )
+          ..writeln('  Rule: $rule')
+          ..writeln('  Tags: ${tags.isNotEmpty ? tags : "-"}')
+          ..writeln();
+      }
     }
+
+    writeGroup('Non-Direct', nonDirectConnections);
+    if (nonDirectConnections.isNotEmpty && directConnections.isNotEmpty) {
+      buffer.writeln('========================================');
+    }
+    writeGroup('Direct', directConnections);
+
     return buffer.toString().trimRight();
   }
 
