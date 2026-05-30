@@ -167,6 +167,27 @@ TrayTitleState trayTitleState(Ref ref) {
 }
 
 @riverpod
+String trayTitleText(Ref ref) {
+  return ref.watch(
+    trafficsProvider.select(
+      (state) => state.list.safeLast(Traffic()).trayTitle,
+    ),
+  );
+}
+
+@riverpod
+String displayedTrayTitle(Ref ref) {
+  final showTrayTitle = ref.watch(
+    appSettingProvider.select((state) => state.showTrayTitle),
+  );
+  final isRunning = ref.watch(runTimeProvider.select((state) => state != null));
+  if (!showTrayTitle || !isRunning) {
+    return '';
+  }
+  return ref.watch(trayTitleTextProvider);
+}
+
+@riverpod
 VpnState vpnState(Ref ref) {
   final vpnProps = ref.watch(vpnSettingProvider);
   final stack = ref.watch(

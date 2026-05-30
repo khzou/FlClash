@@ -42,18 +42,10 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
       }
     });
     if (system.isMacOS) {
-      ref.listenManual(trayTitleStateProvider, (prev, next) {
+      ref.listenManual(displayedTrayTitleProvider, (prev, next) {
         if (prev != next) {
-          final isRunning = ref.read(
-            runTimeProvider.select((state) => state != null),
-          );
           if (tray != null) {
-            unawaited(
-              tray!.updateTrayTitle(
-                showTrayTitle: next.showTrayTitle && isRunning,
-                traffic: next.traffic,
-              ),
-            );
+            unawaited(tray!.updateTrayTitle(next));
           }
         }
       });

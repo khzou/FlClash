@@ -49,7 +49,7 @@ final class CurrentGroupsStateProvider
 }
 
 String _$currentGroupsStateHash() =>
-    r'dbf8f02606a31486c99d7b89d19914cd5a1fc496';
+    r'e1c4baf8b888cbe5c9d3d86c44ded2eb7282ca53';
 
 @ProviderFor(navigationItemsState)
 const navigationItemsStateProvider = NavigationItemsStateProvider._();
@@ -311,6 +311,89 @@ final class TrayTitleStateProvider
 }
 
 String _$trayTitleStateHash() => r'5f868aaf70480b00bfdc2de18684ee646a93fd12';
+
+@ProviderFor(trayTitleText)
+const trayTitleTextProvider = TrayTitleTextProvider._();
+
+final class TrayTitleTextProvider
+    extends $FunctionalProvider<String, String, String>
+    with $Provider<String> {
+  const TrayTitleTextProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'trayTitleTextProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$trayTitleTextHash();
+
+  @$internal
+  @override
+  $ProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String create(Ref ref) {
+    return trayTitleText(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$trayTitleTextHash() => r'38bac8e937544eb3d69841afeed518abf3b8111b';
+
+@ProviderFor(displayedTrayTitle)
+const displayedTrayTitleProvider = DisplayedTrayTitleProvider._();
+
+final class DisplayedTrayTitleProvider
+    extends $FunctionalProvider<String, String, String>
+    with $Provider<String> {
+  const DisplayedTrayTitleProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'displayedTrayTitleProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$displayedTrayTitleHash();
+
+  @$internal
+  @override
+  $ProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String create(Ref ref) {
+    return displayedTrayTitle(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String>(value),
+    );
+  }
+}
+
+String _$displayedTrayTitleHash() =>
+    r'e0d106c8a3fc310c7e83f695857cf5560b836625';
 
 @ProviderFor(vpnState)
 const vpnStateProvider = VpnStateProvider._();

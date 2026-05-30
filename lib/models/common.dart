@@ -260,6 +260,10 @@ abstract class Traffic with _$Traffic {
 }
 
 extension TrafficExt on Traffic {
+  String _traySpeedLine(num value, String direction) {
+    return '$direction ${value.shortTraffic.show.padLeft(5)}/s';
+  }
+
   String get speedText {
     return '↑ ${up.traffic.show}/s   ↓ ${down.traffic.show}/s';
   }
@@ -269,7 +273,7 @@ extension TrafficExt on Traffic {
   }
 
   String get trayTitle {
-    return '↑ ${up.shortTraffic.show}/s\n↓ ${down.shortTraffic.show}/s';
+    return '${_traySpeedLine(up, '↑')}\n${_traySpeedLine(down, '↓')}';
   }
 
   num get speed => up + down;

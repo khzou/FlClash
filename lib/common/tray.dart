@@ -15,13 +15,11 @@ import 'window.dart';
 
 class Tray {
   static Tray? _instance;
-  static const _trayTitleUpdateInterval = Duration(seconds: 3);
 
   bool _isInitialized = false;
   String _lastTrayIconPath = '';
   String _lastToolTip = '';
   String _lastTrayTitle = '';
-  DateTime? _lastTrayTitleUpdateAt;
   String _lastMenuSignature = '';
 
   Tray._internal();
@@ -41,7 +39,6 @@ class Tray {
     _lastTrayIconPath = '';
     _lastToolTip = '';
     _lastTrayTitle = '';
-    _lastTrayTitleUpdateAt = null;
     _lastMenuSignature = '';
   }
 
@@ -242,29 +239,19 @@ class Tray {
     );
   }
 
-  Future<void> updateTrayTitle({
-    required bool showTrayTitle,
-    required Traffic traffic,
-  }) async {
+  Future<void> updateTrayTitle(String title) async {
     if (!system.isMacOS) {
       return;
     }
-    final title = showTrayTitle ? traffic.trayTitle : '';
     await _setTrayTitle(title);
   }
 
   Future<void> _setTrayTitle(String title, {bool force = false}) async {
-    final now = DateTime.now();
-    final canUpdate =
-        force ||
-        _lastTrayTitleUpdateAt == null ||
-        now.difference(_lastTrayTitleUpdateAt!) >= _trayTitleUpdateInterval;
-    if (!canUpdate || _lastTrayTitle == title) {
+    if (!force && _lastTrayTitle == title) {
       return;
     }
     await trayManager.setTitle(title);
     _lastTrayTitle = title;
-    _lastTrayTitleUpdateAt = now;
   }
 
   String _buildMenuSignature(TrayState trayState) {
