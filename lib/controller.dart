@@ -46,7 +46,7 @@ extension InitControllerExt on AppController {
         logLevel: LogLevel.warning,
       );
     };
-    updateTray();
+    // updateTray(); // DISABLED for CPU debugging
     autoUpdateProfiles();
     autoCheckUpdate();
     autoLaunch?.updateStatus(_ref.read(appSettingProvider).autoLaunch);

@@ -1,5 +1,7 @@
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/controller.dart';
+import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/providers/app.dart';
 import 'package:fl_clash/providers/state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,21 +21,27 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
   void initState() {
     super.initState();
     trayManager.addListener(this);
-    ref.listenManual(trayStateProvider, (prev, next) {
-      if (prev != next) {
-        appController.updateTray();
-      }
-    });
-    if (system.isMacOS) {
-      ref.listenManual(trayTitleStateProvider, (prev, next) {
-        if (prev != next) {
-          tray?.updateTrayTitle(
-            showTrayTitle: next.showTrayTitle,
-            traffic: next.traffic,
-          );
-        }
-      });
-    }
+    // TRAY UPDATES DISABLED for CPU debugging
+    // ref.listenManual(trayStateProvider, (prev, next) {
+    //   if (prev != next) {
+    //     tray?.updateVisuals(
+    //       trayState: next,
+    //       traffic: ref.read(
+    //         trafficsProvider.select((state) => state.list.safeLast(Traffic())),
+    //       ),
+    //     );
+    //   }
+    // });
+    // if (system.isMacOS) {
+    //   ref.listenManual(trayTitleStateProvider, (prev, next) {
+    //     if (prev != next) {
+    //       tray?.updateTrayTitle(
+    //         showTrayTitle: next.showTrayTitle,
+    //         traffic: next.traffic,
+    //       );
+    //     }
+    //   });
+    // }
   }
 
   @override
@@ -43,8 +51,10 @@ class _TrayContainerState extends ConsumerState<TrayManager> with TrayListener {
 
   @override
   void onTrayIconRightMouseDown() {
+    // TRAY MENU DISABLED for CPU debugging
+    // await appController.updateTray();
     // ignore: deprecated_member_use
-    trayManager.popUpContextMenu(bringAppToFront: true);
+    // trayManager.popUpContextMenu(bringAppToFront: true);
   }
 
   @override

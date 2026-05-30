@@ -9,11 +9,16 @@ import 'package:tray_manager/tray_manager.dart';
 
 import 'app_localizations.dart';
 import 'constant.dart';
+import 'print.dart';
 import 'system.dart';
 import 'window.dart';
 
 class Tray {
   static Tray? _instance;
+  static const _trayTitleUpdateInterval = Duration(seconds: 3);
+
+  String _lastTrayTitle = '';
+  DateTime? _lastTrayTitleUpdateAt;
 
   Tray._internal();
 
@@ -56,19 +61,22 @@ class Tray {
     }
   }
 
+  Future<void> updateVisuals({
+    required TrayState trayState,
+    required Traffic traffic,
+  }) async {
+    return; // DISABLED for CPU debugging
+  }
+
   Future<void> update({
     required TrayState trayState,
     required Traffic traffic,
   }) async {
+    await updateVisuals(trayState: trayState, traffic: traffic);
     if (system.isAndroid) {
       return;
     }
-    if (!system.isLinux) {
-      await _updateSystemTray(
-        isStart: trayState.isStart,
-        tunEnable: trayState.tunEnable,
-      );
-    }
+    final stopwatch = Stopwatch()..start();
     List<MenuItem> menuItems = [];
     final showMenuItem = MenuItem(
       label: appLocalizations.show,
@@ -111,12 +119,12 @@ class Tray {
     if (system.isMacOS) {
       for (final group in trayState.groups) {
         List<MenuItem> subMenuItems = [];
+        final selectedProxyName = appController.getSelectedProxyName(group.name);
         for (final proxy in group.all) {
           subMenuItems.add(
             MenuItem.checkbox(
               label: proxy.name,
-              checked:
-                  appController.getSelectedProxyName(group.name) == proxy.name,
+              checked: selectedProxyName == proxy.name,
               onClick: (_) {
                 appController.updateCurrentSelectedMap(group.name, proxy.name);
                 appController.changeProxy(
@@ -184,27 +192,15 @@ class Tray {
     menuItems.add(exitMenuItem);
     final menu = Menu(items: menuItems);
     await trayManager.setContextMenu(menu);
-    if (system.isLinux) {
-      await _updateSystemTray(
-        isStart: trayState.isStart,
-        tunEnable: trayState.tunEnable,
-      );
-    }
-    updateTrayTitle(showTrayTitle: trayState.showTrayTitle, traffic: traffic);
+    stopwatch.stop();
+    commonPrint.log('[TRAY] menu rebuild took ${stopwatch.elapsedMilliseconds}ms, ${menuItems.length} items');
   }
 
   Future<void> updateTrayTitle({
     required bool showTrayTitle,
     required Traffic traffic,
   }) async {
-    if (!system.isMacOS) {
-      return;
-    }
-    if (!showTrayTitle) {
-      await trayManager.setTitle('');
-    } else {
-      await trayManager.setTitle(traffic.trayTitle);
-    }
+    return; // DISABLED for CPU debugging
   }
 
   Future<void> _copyEnv(int port) async {
