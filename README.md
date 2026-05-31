@@ -116,6 +116,12 @@ Support the following actions
            dart .\setup.dart macos --arch <arm64 | amd64>
            ```
 
+        3. Or build manually with environment config:
+
+           ```bash
+           flutter build macos --release --dart-define-from-file=env.json
+           ```
+
 ## Star
 
 The easiest way to support developers is to click on the star (⭐) at the top of the page.
