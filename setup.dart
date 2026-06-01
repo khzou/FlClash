@@ -441,7 +441,7 @@ class BuildCommand extends Command {
     final mode = target == Target.android ? Mode.lib : Mode.core;
     final String out = argResults?['out'] ?? (target.same ? 'app' : 'core');
     final archName = argResults?['arch'];
-    final env = argResults?['env'] ?? 'pre';
+    final env = argResults?['env'] ?? 'stable';
     final currentArches = arches
         .where((element) => element.name == archName)
         .toList();

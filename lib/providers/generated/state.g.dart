@@ -2469,7 +2469,7 @@ final class ScriptProvider
   }) : super(
          retry: null,
          name: r'scriptProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -2506,7 +2506,7 @@ final class ScriptProvider
   }
 }
 
-String _$scriptHash() => r'b12a6dbe34e08cb1232afafa8b0b0f5363d28bc0';
+String _$scriptHash() => r'3db5c8a6c6178e981114f441643875923ca2ac4e';
 
 final class ScriptFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Script?>, int?> {
@@ -2516,7 +2516,7 @@ final class ScriptFamily extends $Family
         name: r'scriptProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   ScriptProvider call(int? scriptId) =>
@@ -2543,7 +2543,7 @@ final class SetupStateProvider
   }) : super(
          retry: null,
          name: r'setupStateProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -2580,7 +2580,7 @@ final class SetupStateProvider
   }
 }
 
-String _$setupStateHash() => r'8e0c849fa1a51ee15f8b40be94e3094182325b58';
+String _$setupStateHash() => r'6a756c5a5564b74393b32ca5808ab98dd87f0853';
 
 final class SetupStateFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<SetupState>, int?> {
@@ -2590,7 +2590,7 @@ final class SetupStateFamily extends $Family
         name: r'setupStateProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   SetupStateProvider call(int? profileId) =>

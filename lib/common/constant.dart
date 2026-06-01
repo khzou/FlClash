@@ -107,6 +107,9 @@ double getWidgetHeight(num lines) {
 }
 
 const maxLength = 1000;
+const logsRetentionLength = 200;
+const requestsRetentionLength = 100;
+const backgroundRequestsRetentionLength = 20;
 
 final mainIsolate = 'FlClashMainIsolate';
 

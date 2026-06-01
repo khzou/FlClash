@@ -65,7 +65,7 @@ final class AddedRuleStreamProvider
   }) : super(
          retry: null,
          name: r'addedRuleStreamProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -102,7 +102,7 @@ final class AddedRuleStreamProvider
   }
 }
 
-String _$addedRuleStreamHash() => r'491968ce795e56d4516a95676fcf46d575b3495f';
+String _$addedRuleStreamHash() => r'ec62e559c882b2c4c450ef09d51feb125b8a31cc';
 
 final class AddedRuleStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<Rule>>, int> {
@@ -112,7 +112,7 @@ final class AddedRuleStreamFamily extends $Family
         name: r'addedRuleStreamProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   AddedRuleStreamProvider call(int profileId) =>

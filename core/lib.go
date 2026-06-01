@@ -143,11 +143,14 @@ func handleStartTun(callback unsafe.Pointer, fd int, stack, address, dns string)
 	tunLock.Lock()
 	defer tunLock.Unlock()
 	if fd != 0 {
+		log.Infoln("handleStartTun: fd=%d, stack=%s, address=%s, dns=%s", fd, stack, address, dns)
 		tunHandler = &TunHandler{
 			callback: callback,
 			limit:    semaphore.NewWeighted(4),
 		}
 		tunHandler.start(fd, stack, address, dns)
+	} else {
+		log.Infoln("handleStartTun: fd is 0, skipping")
 	}
 }
 
@@ -234,16 +237,12 @@ func setEventListener(listener unsafe.Pointer) {
 
 //export getTotalTraffic
 func getTotalTraffic(onlyStatisticsProxy bool) *C.char {
-	data := C.CString(handleGetTotalTraffic(onlyStatisticsProxy))
-	defer C.free(unsafe.Pointer(data))
-	return data
+	return C.CString(handleGetTotalTraffic(onlyStatisticsProxy))
 }
 
 //export getTraffic
 func getTraffic(onlyStatisticsProxy bool) *C.char {
-	data := C.CString(handleGetTraffic(onlyStatisticsProxy))
-	defer C.free(unsafe.Pointer(data))
-	return data
+	return C.CString(handleGetTraffic(onlyStatisticsProxy))
 }
 
 func sendMessage(message Message) {

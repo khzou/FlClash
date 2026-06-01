@@ -40,6 +40,10 @@ class Requests extends _$Requests with AutoDisposeNotifierMixin {
   void addRequest(TrackerInfo value) {
     this.value = state.copyWith()..add(value);
   }
+
+  void updateMaxLength(int maxLength) {
+    value = FixedList(maxLength, list: state.list);
+  }
 }
 
 @Riverpod(keepAlive: true)

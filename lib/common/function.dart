@@ -71,13 +71,14 @@ Future<T> retry<T>({
   required bool Function(T res) retryIf,
   Duration delay = midDuration,
 }) async {
-  int attempts = 0;
+  var attempts = 0;
   while (attempts < maxAttempts) {
     final res = await task();
-    if (!retryIf(res) || attempts >= maxAttempts) {
+    if (!retryIf(res) || attempts >= maxAttempts - 1) {
       return res;
     }
     attempts++;
+    await Future.delayed(delay);
   }
   throw 'retry error';
 }

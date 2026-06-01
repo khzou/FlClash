@@ -101,17 +101,20 @@ func handleGetProxies() ProxiesData {
 	defer runLock.Unlock()
 
 	nameList := config.GetProxyNameList()
+	log.Infoln("[Proxies] GetProxyNameList count=%d", len(nameList))
 
 	proxies := make(map[string]constant.Proxy)
 
 	for name, proxy := range tunnel.Proxies() {
 		proxies[name] = proxy
 	}
+	log.Infoln("[Proxies] tunnel.Proxies() count=%d", len(proxies))
 	for _, p := range tunnel.Providers() {
 		for _, proxy := range p.Proxies() {
 			proxies[proxy.Name()] = proxy
 		}
 	}
+	log.Infoln("[Proxies] after providers count=%d", len(proxies))
 
 	hasGlobal := false
 	allNames := make([]string, 0, len(nameList)+1)
@@ -138,6 +141,7 @@ func handleGetProxies() ProxiesData {
 		}
 	}
 
+	log.Infoln("[Proxies] returning all=%d proxies=%d", len(allNames), len(proxies))
 	return ProxiesData{
 		All:     allNames,
 		Proxies: proxies,
@@ -535,17 +539,21 @@ func handleSetupConfig(bytes []byte) string {
 	if !isInit {
 		return "not initialized"
 	}
+	log.Infoln("[Setup] handleSetupConfig called, isInit=%v, dataLen=%d", isInit, len(bytes))
 	var params = defaultSetupParams()
 	err := UnmarshalJson(bytes, params)
 	if err != nil {
-		log.Errorln("unmarshalRawConfig error %v", err)
+		log.Errorln("[Setup] UnmarshalJson error: %v", err)
 		_ = applyConfig(defaultSetupParams())
 		return err.Error()
 	}
+	log.Infoln("[Setup] params: testUrl=%s, selectedMap=%v", params.TestURL, params.SelectedMap)
 	err = applyConfig(params)
 	if err != nil {
+		log.Errorln("[Setup] applyConfig error: %v", err)
 		return err.Error()
 	}
+	log.Infoln("[Setup] handleSetupConfig success")
 	return ""
 }
 

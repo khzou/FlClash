@@ -34,13 +34,25 @@ class _OverwriteViewState extends ConsumerState<OverwriteView> {
     if (profile == null) {
       return;
     }
-    final configMap = await appController.getProfileWithId(profile.id);
-    final content = await encodeYamlTask(configMap);
-    if (!mounted) {
-      return;
-    }
-    final previewPage = EditorPage(title: profile.realLabel, content: content);
-    BaseNavigator.push<String>(context, previewPage);
+    await appController.loadingRun(() async {
+      final configMap = await appController.getProfileWithId(profile.id);
+      if (!mounted) {
+        return;
+      }
+      if (configMap.isEmpty) {
+        context.showNotifier('Preview returned empty config');
+        return;
+      }
+      final content = await encodeYamlTask(configMap);
+      if (!mounted) {
+        return;
+      }
+      final previewPage = EditorPage(
+        title: profile.realLabel,
+        content: content,
+      );
+      BaseNavigator.push<String>(context, previewPage);
+    }, tag: LoadingTag.profiles);
   }
 
   @override

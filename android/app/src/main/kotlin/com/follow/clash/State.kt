@@ -158,22 +158,37 @@ object State {
                 }
                 try {
                     runStateFlow.tryEmit(RunState.PENDING)
-                    val options = sharedState.vpnOptions ?: return@launch
+                    val options = sharedState.vpnOptions ?: run {
+                        GlobalState.log("startService: vpnOptions is null")
+                        return@launch
+                    }
+                    GlobalState.log("startService: vpnOptions.enable=${options.enable}, stack=${options.stack}")
                     appPlugin?.let {
+                        GlobalState.log("startService: using appPlugin.prepare")
                         it.prepare(options.enable) {
+                            GlobalState.log("startService: prepare callback, calling Service.startService")
                             runTime = Service.startService(options, runTime)
+                            GlobalState.log("startService: Service.startService returned, runTime=$runTime")
                             runStateFlow.tryEmit(RunState.START)
                         }
                     } ?: run {
+                        GlobalState.log("startService: no appPlugin, using VpnService.prepare")
                         val intent = VpnService.prepare(GlobalState.application)
                         if (intent != null) {
+                            GlobalState.log("startService: VpnService.prepare returned intent, waiting for user permission")
                             return@launch
                         }
+                        GlobalState.log("startService: VpnService.prepare returned null (already permitted), calling Service.startService")
                         runTime = Service.startService(options, runTime)
+                        GlobalState.log("startService: Service.startService returned, runTime=$runTime")
                         runStateFlow.tryEmit(RunState.START)
                     }
+                } catch (e: Exception) {
+                    GlobalState.log("startService FAILED: ${e.message}")
+                    e.printStackTrace()
                 } finally {
                     if (runStateFlow.value == RunState.PENDING) {
+                        GlobalState.log("startService: still PENDING in finally, reverting to STOP")
                         runStateFlow.tryEmit(RunState.STOP)
                     }
                 }

@@ -181,14 +181,25 @@ class ProfileItem extends StatelessWidget {
   }
 
   Future<void> _handlePreview(BuildContext context) async {
-    final configMap = await appController.getProfileWithId(profile.id);
-    final content = await encodeYamlTask(configMap);
-    if (!context.mounted) {
-      return;
-    }
-
-    final previewPage = EditorPage(title: profile.realLabel, content: content);
-    BaseNavigator.push<String>(context, previewPage);
+    await appController.loadingRun(() async {
+      final configMap = await appController.getProfileWithId(profile.id);
+      if (!context.mounted) {
+        return;
+      }
+      if (configMap.isEmpty) {
+        context.showNotifier('Preview returned empty config');
+        return;
+      }
+      final content = await encodeYamlTask(configMap);
+      if (!context.mounted) {
+        return;
+      }
+      final previewPage = EditorPage(
+        title: profile.realLabel,
+        content: content,
+      );
+      BaseNavigator.push<String>(context, previewPage);
+    }, tag: LoadingTag.profiles);
   }
 
   Future updateProfile() async {

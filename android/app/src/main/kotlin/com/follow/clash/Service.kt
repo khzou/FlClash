@@ -69,6 +69,7 @@ object Service {
         onResult: ((result: String) -> Unit)?,
     ): Result<Unit> {
         val res = mutableListOf<ByteArray>()
+        GlobalState.log("Service.quickSetup request initLen=${initParamsString.length} setupLen=${setupParamsString.length}")
         return delegate.useService {
             it.quickSetup(
                 initParamsString,
@@ -79,6 +80,7 @@ object Service {
                     ) {
                         res.add(result ?: byteArrayOf())
                         ack?.onAck()
+                        GlobalState.log("Service.quickSetup callback chunk=${result?.size ?: 0} isSuccess=$isSuccess totalBytes=${res.sumOf { it.size }}")
                         if (isSuccess) {
                             onResult?.let { cb ->
                                 cb(res.formatString())
@@ -88,6 +90,7 @@ object Service {
                 },
                 object : IVoidInterface.Stub() {
                     override fun invoke() {
+                        GlobalState.log("Service.quickSetup onStarted invoked")
                         onStarted?.let { onStarted ->
                             onStarted()
                         }

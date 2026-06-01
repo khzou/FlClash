@@ -11,7 +11,7 @@ Stream<List<Profile>> profilesStream(Ref ref) {
   return database.profilesDao.all().watch();
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<List<Rule>> addedRuleStream(Ref ref, int profileId) {
   return database.rulesDao.allAddedRules(profileId).watch();
 }

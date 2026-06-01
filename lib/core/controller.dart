@@ -94,11 +94,21 @@ class CoreController {
     required SetupState setupState,
     VoidCallback? preloadInvoke,
   }) async {
+    commonPrint.log(
+      '[AndroidDebug] CoreController.setupConfig start profileId=${setupState.profileId} selectedMap=${params.selectedMap.length}',
+    );
     final res = _interface.setupConfig(params);
     if (preloadInvoke != null) {
+      commonPrint.log(
+        '[AndroidDebug] CoreController.setupConfig preloadInvoke',
+      );
       preloadInvoke();
     }
-    return res;
+    final message = await res;
+    commonPrint.log(
+      '[AndroidDebug] CoreController.setupConfig end profileId=${setupState.profileId} message="${message.isEmpty ? "<empty>" : message}"',
+    );
+    return message;
   }
 
   Future<List<Group>> getProxiesGroups({
@@ -108,6 +118,9 @@ class CoreController {
     required String defaultTestUrl,
   }) async {
     final proxiesData = await _interface.getProxies();
+    commonPrint.log(
+      '[AndroidDebug] getProxiesGroups all=${proxiesData.all.length} proxies=${proxiesData.proxies.length}',
+    );
     return toGroupsTask(
       ComputeGroupsState(
         proxiesData: proxiesData,
@@ -199,13 +212,30 @@ class CoreController {
 
   Future<Map<String, dynamic>> getConfig(int id) async {
     final profilePath = await appPath.getProfilePath(id.toString());
-    final res = await _interface.getConfig(profilePath);
+    commonPrint.log(
+      '[AndroidDebug] core.getConfig start id=$id path=$profilePath',
+    );
+    final res = await _interface
+        .getConfig(profilePath)
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () {
+            throw 'core.getConfig timeout';
+          },
+        );
     if (res.isSuccess) {
       final data = Map<String, dynamic>.from(res.data);
       data['rules'] = data['rule'];
       data.remove('rule');
+      commonPrint.log(
+        '[AndroidDebug] core.getConfig id=$id proxies=${_debugConfigCount(data, 'proxies')} groups=${_debugConfigCount(data, 'proxy-groups')} providers=${_debugConfigCount(data, 'proxy-providers')} rules=${_debugConfigCount(data, 'rules')}',
+      );
       return data;
     } else {
+      commonPrint.log(
+        '[AndroidDebug] core.getConfig id=$id failed message=${res.message}',
+        logLevel: LogLevel.error,
+      );
       throw res.message;
     }
   }
@@ -271,6 +301,14 @@ class CoreController {
   Future<String> deleteFile(String path) async {
     return await _interface.deleteFile(path);
   }
+}
+
+int _debugConfigCount(Map<dynamic, dynamic>? config, String key) {
+  if (config == null) return -1;
+  final value = config[key];
+  if (value is List) return value.length;
+  if (value is Map) return value.length;
+  return value == null ? 0 : 1;
 }
 
 final coreController = CoreController();

@@ -127,6 +127,7 @@ class VpnService : SystemVpnService(), IBaseService,
     }
 
     private fun handleStart(options: VpnOptions) {
+        GlobalState.log("handleStart begin")
         val fd = with(Builder()) {
             val cidr = IPV4_ADDRESS.toCIDR()
             addAddress(cidr.address, cidr.prefixLength)
@@ -223,6 +224,7 @@ class VpnService : SystemVpnService(), IBaseService,
             establish()?.detachFd()
                 ?: throw NullPointerException("Establish VPN rejected by system")
         }
+        GlobalState.log("handleStart: VPN established, fd=$fd")
         Core.startTun(
             fd,
             protect = this::protect,
@@ -231,15 +233,22 @@ class VpnService : SystemVpnService(), IBaseService,
             options.address,
             options.dns
         )
+        GlobalState.log("handleStart: Core.startTun called")
     }
 
     override fun start() {
         try {
+            GlobalState.log("VpnService.start begin")
             loader.load()
+            GlobalState.log("VpnService.loader.load done")
             State.options?.let {
+                GlobalState.log("VpnService.handleStart options.enable=${it.enable}")
                 handleStart(it)
+                GlobalState.log("VpnService.handleStart done")
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            GlobalState.log("VpnService.start FAILED: ${e.message}")
+            e.printStackTrace()
             stop()
         }
     }

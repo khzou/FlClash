@@ -16,7 +16,7 @@ val Traffic.speedText: String
 fun Core.getSpeedTrafficText(onlyStatisticsProxy: Boolean): String {
     try {
         val res = getTraffic(onlyStatisticsProxy)
-        val traffic = Gson().fromJson(res, Traffic::class.java)
+        val traffic = Gson().fromJson(res, Traffic::class.java) ?: return ""
         return traffic.speedText
     } catch (e: Exception) {
         GlobalState.log(e.message + "")

@@ -30,6 +30,12 @@ class _CoreContainerState extends ConsumerState<CoreManager>
   void initState() {
     super.initState();
     coreEventManager.addListener(this);
+    ref.listenManual(currentPageLabelProvider, (prev, next) {
+      final maxLength = next == PageLabel.requests
+          ? requestsRetentionLength
+          : backgroundRequestsRetentionLength;
+      ref.read(requestsProvider.notifier).updateMaxLength(maxLength);
+    }, fireImmediately: true);
     ref.listenManual(
       currentSetupStateProvider.select((state) => state?.profileId),
       (prev, next) {
@@ -87,12 +93,16 @@ class _CoreContainerState extends ConsumerState<CoreManager>
 
   @override
   Future<void> onLoaded(String providerName) async {
+    commonPrint.log('[AndroidDebug] provider loaded event name=$providerName');
     ref
         .read(providersProvider.notifier)
         .setProvider(await coreController.getExternalProvider(providerName));
     debouncer.call(FunctionTag.loadedProvider, () async {
+      commonPrint.log(
+        '[AndroidDebug] provider loaded debounce fired name=$providerName',
+      );
       appController.updateGroupsDebounce();
-    }, duration: const Duration(milliseconds: 5000));
+    }, duration: const Duration(milliseconds: 600));
     super.onLoaded(providerName);
   }
 

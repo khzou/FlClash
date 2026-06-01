@@ -691,7 +691,7 @@ OverwriteType overwriteType(Ref ref, int? profileId) {
   );
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Script?> script(Ref ref, int? scriptId) async {
   final script = await ref.watch(
     (scriptsProvider.future.select((state) async {
@@ -702,7 +702,7 @@ Future<Script?> script(Ref ref, int? scriptId) async {
   return script;
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<SetupState> setupState(Ref ref, int? profileId) async {
   final profile = ref.watch(profileProvider(profileId));
   final scriptId = profile?.scriptId;

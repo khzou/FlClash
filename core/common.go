@@ -241,13 +241,20 @@ func applyConfig(params *SetupParams) error {
 	defer runLock.Unlock()
 	var err error
 	constant.DefaultTestURL = params.TestURL
+	homeDir := constant.Path.HomeDir()
+	log.Infoln("[Setup] homeDir=%s, configPath=%s", homeDir, filepath.Join(homeDir, "config.yaml"))
 	currentConfig, err = executor.ParseWithPath(filepath.Join(constant.Path.HomeDir(), "config.yaml"))
 	if err != nil {
+		log.Errorln("[Setup] ParseWithPath failed: %v, using default config", err)
 		currentConfig, _ = config.ParseRawConfig(config.DefaultRawConfig())
+	} else {
+		log.Infoln("[Setup] ParseWithPath success")
 	}
 	hub.ApplyConfig(currentConfig)
+	log.Infoln("[Setup] hub.ApplyConfig done")
 	patchSelectGroup(params.SelectedMap)
 	updateListeners()
+	log.Infoln("[Setup] updateListeners done")
 	return err
 }
 

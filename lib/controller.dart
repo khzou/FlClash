@@ -448,7 +448,9 @@ extension ProxiesControllerExt on AppController {
             defaultTestUrl: testUrl,
           );
         },
+        maxAttempts: 12,
         retryIf: (res) => res.isEmpty,
+        delay: const Duration(milliseconds: 500),
       );
     } catch (e) {
       commonPrint.log('updateGroups error: $e');
@@ -549,8 +551,10 @@ extension SetupControllerExt on AppController {
     }
     _ref.read(delayDataSourceProvider.notifier).value = {};
     applyProfile(force: true);
-    _ref.read(logsProvider.notifier).value = FixedList(500);
-    _ref.read(requestsProvider.notifier).value = FixedList(500);
+    _ref.read(logsProvider.notifier).value = FixedList(logsRetentionLength);
+    _ref.read(requestsProvider.notifier).value = FixedList(
+      backgroundRequestsRetentionLength,
+    );
   }
 
   Future<void> updateStatus(bool isStart, {bool isInit = false}) async {
@@ -685,6 +689,9 @@ extension SetupControllerExt on AppController {
     final appendSystemDns = networkVM2.a;
     final routeMode = networkVM2.b;
     final configMap = await coreController.getConfig(profileId);
+    commonPrint.log(
+      '[AndroidDebug] getProfile source profileId=$profileId proxies=${_debugConfigCount(configMap, 'proxies')} groups=${_debugConfigCount(configMap, 'proxy-groups')} providers=${_debugConfigCount(configMap, 'proxy-providers')} rules=${_debugConfigCount(configMap, 'rules')}',
+    );
     String? scriptContent;
     final List<Rule> addedRules = [];
     if (setupState.overwriteType == OverwriteType.script) {
@@ -698,9 +705,12 @@ extension SetupControllerExt on AppController {
     Map<String, dynamic> rawConfig = configMap;
     if (scriptContent?.isNotEmpty == true) {
       rawConfig = await globalState.handleEvaluate(scriptContent!, rawConfig);
+      commonPrint.log(
+        '[AndroidDebug] getProfile after script profileId=$profileId proxies=${_debugConfigCount(rawConfig, 'proxies')} groups=${_debugConfigCount(rawConfig, 'proxy-groups')} providers=${_debugConfigCount(rawConfig, 'proxy-providers')} rules=${_debugConfigCount(rawConfig, 'rules')}',
+      );
     }
     final directory = await appPath.profilesPath;
-    final res = makeRealProfileTask(
+    final res = await makeRealProfileTask(
       MakeRealProfileState(
         profilesPath: directory,
         profileId: profileId,
@@ -712,19 +722,48 @@ extension SetupControllerExt on AppController {
         defaultUA: defaultUA,
       ),
     );
+    commonPrint.log(
+      '[AndroidDebug] getProfile final profileId=$profileId proxies=${_debugConfigCount(res, 'proxies')} groups=${_debugConfigCount(res, 'proxy-groups')} providers=${_debugConfigCount(res, 'proxy-providers')} rules=${_debugConfigCount(res, 'rules')}',
+    );
     return res;
   }
 
   Future<Map> getProfileWithId(int profileId) async {
     var res = {};
     try {
-      final setupState = await _ref.read(setupStateProvider(profileId).future);
+      commonPrint.log(
+        '[AndroidDebug] getProfileWithId start profileId=$profileId',
+      );
+      final setupState = await _ref
+          .read(setupStateProvider(profileId).future)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw 'setupState timeout';
+            },
+          );
+      commonPrint.log(
+        '[AndroidDebug] getProfileWithId setupState ready profileId=$profileId overwriteType=${setupState.overwriteType.name} addedRules=${setupState.addedRules.length} script=${setupState.script?.id}',
+      );
       final patchClashConfig = _ref.read(patchClashConfigProvider);
-      res = await getProfile(
-        setupState: setupState,
-        patchConfig: patchClashConfig,
+      res =
+          await getProfile(
+            setupState: setupState,
+            patchConfig: patchClashConfig,
+          ).timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              throw 'build preview config timeout';
+            },
+          );
+      commonPrint.log(
+        '[AndroidDebug] getProfileWithId done profileId=$profileId',
       );
     } catch (e) {
+      commonPrint.log(
+        '[AndroidDebug] getProfileWithId failed profileId=$profileId error=$e',
+        logLevel: LogLevel.error,
+      );
       globalState.showNotifier(e.toString());
     }
     return res;
@@ -758,16 +797,30 @@ extension SetupControllerExt on AppController {
     final configFilePath = await appPath.configFilePath;
     final yamlString = await encodeYamlTask(config);
     await File(configFilePath).safeWriteAsString(yamlString);
+    commonPrint.log(
+      '[AndroidDebug] setupConfig profileId=${setupState.profileId} file=$configFilePath yamlLength=${yamlString.length}',
+    );
     final message = await coreController.setupConfig(
       setupState: setupState,
       params: setupParams,
       preloadInvoke: preloadInvoke,
+    );
+    commonPrint.log(
+      '[AndroidDebug] setupConfig result profileId=${setupState.profileId} message="${message.isEmpty ? "<empty>" : message}"',
     );
     if (message.isNotEmpty) {
       throw message;
     }
     addCheckIp();
   }
+}
+
+int _debugConfigCount(Map<dynamic, dynamic>? config, String key) {
+  if (config == null) return -1;
+  final value = config[key];
+  if (value is List) return value.length;
+  if (value is Map) return value.length;
+  return value == null ? 0 : 1;
 }
 
 extension CoreControllerExt on AppController {

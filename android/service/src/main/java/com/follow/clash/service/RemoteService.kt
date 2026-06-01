@@ -46,10 +46,12 @@ class RemoteService : Service(),
     private fun handleStartService(runTime: Long, result: IResultInterface) {
         launch {
             runLock.withLock {
+                GlobalState.log("handleStartService: options.enable=${State.options?.enable}")
                 val nextIntent = when (State.options?.enable == true) {
                     true -> VpnService::class.intent
                     false -> CommonService::class.intent
                 }
+                GlobalState.log("handleStartService: nextIntent=${nextIntent.component?.className}")
                 if (intent != nextIntent) {
                     delegate?.unbind()
                     delegate = ServiceDelegate(nextIntent, ::handleServiceDisconnected) { binder ->
@@ -104,7 +106,9 @@ class RemoteService : Service(),
             callback: ICallbackInterface,
             onStarted: IVoidInterface
         ) {
+            GlobalState.log("RemoteService.quickSetup start initLen=${initParamsString.length} setupLen=${setupParamsString.length}")
             Core.quickSetup(initParamsString, setupParamsString) {
+                GlobalState.log("RemoteService.quickSetup native callback resultLen=${it?.length ?: 0}")
                 launch {
                     runCatching {
                         val chunks = it?.chunkedForAidl() ?: listOf()
@@ -124,6 +128,7 @@ class RemoteService : Service(),
                     }
                 }
             }
+            GlobalState.log("RemoteService.quickSetup invoking onStarted before native callback completes")
             onStarted()
         }
 
